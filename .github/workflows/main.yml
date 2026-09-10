@@ -62,12 +62,25 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     steps:
       - uses: actions/checkout@v4
-      - name: Deploy para a Vercel
-        uses: amondnet/vercel-action@v25
+      - uses: actions/setup-node@v4
         with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: '--prod'
+          node-version: 20
+      # amondnet/vercel-action@v25 instala uma versão fixa e antiga do
+      # Vercel CLI (25.1.0), que a API da Vercel já não aceita mais
+      # ("Your Vercel CLI version is outdated..."). Usando `npm install
+      # -g vercel@latest` diretamente (o jeito que a própria Vercel
+      # documenta para CI) sempre pega a versão atual, sem depender de
+      # uma action de terceiros desatualizada.
+      - name: Instalar Vercel CLI
+        run: npm install --global vercel@latest
+      - name: Puxar configuração do ambiente Vercel
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Build com a Vercel
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Deploy para produção
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
