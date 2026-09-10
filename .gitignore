@@ -1,0 +1,35 @@
+# ---- Dependências ----
+node_modules/
+
+# ---- Builds / outputs ----
+dist/
+build/
+.vercel/
+*.tsbuildinfo
+
+# ---- Ambiente / segredos ----
+.env
+.env.local
+.env.*.local
+
+# ---- Logs ----
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ---- Testes / cobertura ----
+coverage/
+
+# ---- Editor / SO ----
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

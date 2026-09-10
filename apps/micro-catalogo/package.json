@@ -1,0 +1,40 @@
+{
+  "name": "micro-catalogo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "webpack serve --config webpack.config.js --mode development",
+    "build": "webpack --config webpack.config.js --mode production",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "@bookhub/shared": "*",
+    "axios": "^1.7.9",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.26.0",
+    "@babel/preset-env": "^7.26.0",
+    "@babel/preset-react": "^7.26.3",
+    "@babel/preset-typescript": "^7.26.0",
+    "@eslint/js": "^9.17.0",
+    "@module-federation/enhanced": "^2.9.0",
+    "@tailwindcss/postcss": "^4.0.0",
+    "babel-loader": "^9.2.1",
+    "css-loader": "^7.1.2",
+    "dotenv": "^16.4.7",
+    "eslint": "^9.17.0",
+    "eslint-plugin-react": "^7.37.3",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "globals": "^15.14.0",
+    "html-webpack-plugin": "^5.6.3",
+    "postcss": "^8.4.49",
+    "postcss-loader": "^8.1.1",
+    "style-loader": "^4.0.0",
+    "tailwindcss": "^4.0.0",
+    "webpack": "^5.97.1",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^5.2.0"
+  }
+}

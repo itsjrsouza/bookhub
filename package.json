@@ -1,0 +1,20 @@
+{
+  "name": "bookhub",
+  "version": "1.0.0",
+  "private": true,
+  "description": "BookHub — plataforma de leitura: catálogo de livros, estante pessoal, diário de leitura (PWA) e micro frontends, em um único produto.",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n catalogo,estante,shell -c yellow,green,magenta \"npm run dev -w apps/micro-catalogo\" \"npm run dev -w apps/micro-estante\" \"npm run dev -w apps/shell\"",
+    "build": "npm run build -w apps/micro-catalogo && npm run build -w apps/micro-estante && npm run build -w apps/shell && node scripts/copy-diario.mjs",
+    "lint": "npm run lint -w apps/shell && npm run lint -w apps/micro-catalogo && npm run lint -w apps/micro-estante",
+    "test": "npm run test -w apps/shell",
+    "typecheck": "npm run typecheck -w apps/shell"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

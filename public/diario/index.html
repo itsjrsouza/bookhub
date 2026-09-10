@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Diário de Leitura — BookHub</title>
+    <meta
+      name="description"
+      content="Registre suas sessões de leitura: livro, páginas lidas, data e anotações. Funciona offline."
+    />
+    <meta name="theme-color" content="#6366f1" />
+
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="icons/icon-192.png" />
+
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="app-header">
+        <p class="back-link"><a href="/">← Voltar ao BookHub</a></p>
+        <h1>📖 Diário de Leitura</h1>
+        <p>Registre suas sessões de leitura. Funciona até sem internet.</p>
+        <button id="install-btn" class="btn-install" hidden>⬇️ Instalar aplicativo</button>
+      </header>
+
+      <main>
+        <form id="session-form" class="session-form">
+          <div class="field">
+            <label for="book">Livro</label>
+            <input id="book" name="book" type="text" placeholder="Ex: Duna" required />
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="pages">Páginas lidas</label>
+              <input id="pages" name="pages" type="number" min="1" placeholder="Ex: 35" required />
+            </div>
+
+            <div class="field">
+              <label for="date">Data</label>
+              <input id="date" name="date" type="date" required />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="notes">Anotações</label>
+            <textarea
+              id="notes"
+              name="notes"
+              rows="3"
+              placeholder="O que achou do que leu hoje?"
+            ></textarea>
+          </div>
+
+          <button type="submit" class="btn-primary">➕ Registrar sessão</button>
+        </form>
+
+        <section class="sessions-section">
+          <h2>Suas sessões</h2>
+          <p id="empty-state" class="empty-state" hidden>
+            Nenhuma sessão registrada ainda. Comece a registrar sua leitura! 📚
+          </p>
+          <ul id="sessions-list" class="sessions-list"></ul>
+        </section>
+      </main>
+
+      <footer class="app-footer">
+        <p id="connection-status" class="connection-status">🟢 Online</p>
+      </footer>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
