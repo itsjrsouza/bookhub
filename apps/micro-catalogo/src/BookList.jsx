@@ -1,7 +1,7 @@
 import React from 'react';
 import BookItem from './BookItem';
 
-function BookList({ books, isLoading, busyId, onDelete, onToggleStatus, onAddToShelf }) {
+function BookList({ books, isLoading, busyId, shelfIds, onDelete, onToggleStatus, onAddToShelf }) {
   if (isLoading) {
     return <p className="state-message">Carregando catálogo…</p>;
   }
@@ -20,6 +20,7 @@ function BookList({ books, isLoading, busyId, onDelete, onToggleStatus, onAddToS
           onToggleStatus={onToggleStatus}
           onAddToShelf={onAddToShelf}
           isBusy={busyId === book._id}
+          isOnShelf={shelfIds.has(book._id)}
         />
       ))}
     </ul>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { isBookRead } from '@bookhub/shared';
 
-function BookItem({ book, onDelete, onToggleStatus, onAddToShelf, isBusy }) {
+function BookItem({ book, onDelete, onToggleStatus, onAddToShelf, isBusy, isOnShelf }) {
   const read = isBookRead(book);
 
   return (
@@ -26,15 +26,21 @@ function BookItem({ book, onDelete, onToggleStatus, onAddToShelf, isBusy }) {
         >
           {book.status}
         </button>
-        <button
-          type="button"
-          className="btn-shelf"
-          onClick={() => onAddToShelf(book)}
-          disabled={isBusy}
-          title="Adicionar à minha estante"
-        >
-          📚 Adicionar à estante
-        </button>
+        {isOnShelf ? (
+          <span className="badge-on-shelf" title="Este livro já está na sua estante">
+            ✓ Na estante
+          </span>
+        ) : (
+          <button
+            type="button"
+            className="btn-shelf"
+            onClick={() => onAddToShelf(book)}
+            disabled={isBusy}
+            title="Adicionar à minha estante"
+          >
+            📚 Adicionar à estante
+          </button>
+        )}
         <button
           type="button"
           className="btn-delete"

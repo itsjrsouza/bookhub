@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { ADD_TO_SHELF_EVENT } from '@bookhub/shared';
+import React, { useEffect, useRef, useState } from 'react';
+import { ADD_TO_SHELF_EVENT, getShelfBooks, removeBookFromShelf } from '@bookhub/shared';
 import { createBook, deleteBook, fetchBooks, updateBookStatus } from './api';
 import BookForm from './BookForm';
 import BookList from './BookList';
+import Toast from './Toast';
 import './styles.css';
 
 function App() {
@@ -11,6 +12,12 @@ function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [busyId, setBusyId] = useState(null);
   const [error, setError] = useState(null);
+  const [toastMessage, setToastMessage] = useState(null);
+  // IDs dos livros já presentes na estante — lido do mesmo localStorage
+  // que o micro Estante usa (via @bookhub/shared), para esconder o botão
+  // "Adicionar à estante" nos livros que já foram adicionados.
+  const [shelfIds, setShelfIds] = useState(() => new Set(getShelfBooks().map((book) => book._id)));
+  const toastTimeoutRef = useRef(null);
 
   async function loadBooks() {
     setIsLoading(true);
@@ -32,6 +39,18 @@ function App() {
     loadBooks();
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    };
+  }, []);
+
+  function showToast(message) {
+    setToastMessage(message);
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    toastTimeoutRef.current = setTimeout(() => setToastMessage(null), 2500);
+  }
+
   async function handleAddBook(newBook) {
     setIsSubmitting(true);
     setError(null);
@@ -52,6 +71,16 @@ function App() {
     try {
       await deleteBook(id);
       setBooks((prev) => prev.filter((book) => book._id !== id));
+      // Se o livro removido do catálogo estava na estante, remove de lá
+      // também — a estante não deveria mostrar um livro que não existe
+      // mais no catálogo.
+      removeBookFromShelf(id);
+      setShelfIds((prev) => {
+        if (!prev.has(id)) return prev;
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
     } catch (err) {
       console.error(err);
       setError('Erro ao remover o livro. Tente novamente.');
@@ -77,6 +106,8 @@ function App() {
 
   function handleAddToShelf(book) {
     window.dispatchEvent(new CustomEvent(ADD_TO_SHELF_EVENT, { detail: book }));
+    setShelfIds((prev) => new Set(prev).add(book._id));
+    showToast(`"${book.title}" foi adicionado à sua estante! 📚`);
   }
 
   return (
@@ -94,11 +125,14 @@ function App() {
           books={books}
           isLoading={isLoading}
           busyId={busyId}
+          shelfIds={shelfIds}
           onDelete={handleDeleteBook}
           onToggleStatus={handleToggleStatus}
           onAddToShelf={handleAddToShelf}
         />
       </div>
+
+      <Toast message={toastMessage} />
     </section>
   );
 }
