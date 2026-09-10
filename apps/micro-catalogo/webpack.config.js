@@ -15,7 +15,11 @@ module.exports = (env, argv) => ({
     headers: { 'Access-Control-Allow-Origin': '*' },
   },
   output: {
-    publicPath: 'http://localhost:3001/',
+    // Em produção (Vercel), defina PUBLIC_URL com a URL publicada deste
+    // micro (ex: https://bookhub-micro-catalogo.vercel.app) — precisa
+    // bater com a URL real, senão os chunks internos (vendors, módulo
+    // exposto) não são encontrados pelo runtime do Module Federation.
+    publicPath: process.env.PUBLIC_URL ? `${process.env.PUBLIC_URL}/` : 'http://localhost:3001/',
     path: path.resolve(__dirname, 'dist'),
     clean: true,
   },

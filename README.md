@@ -6,7 +6,7 @@ Internamente ele é composto por um shell principal, dois micro frontends e
 um PWA — mas para quem usa, é uma coisa só.
 
 🔗 **Aplicação publicada:** preencha aqui após o primeiro deploy —
-`https://SEU-PROJETO.vercel.app` _(veja [Deploy](#-cicd-e-deploy) abaixo)_
+`https://bookhub-flame.vercel.app/` _(veja [Deploy](#-cicd-e-deploy) abaixo)_
 
 ## Sumário
 
@@ -78,7 +78,8 @@ bookhub/
 │   └── copy-diario.mjs   # Copia public/diario para dentro do build do shell
 ├── .github/workflows/main.yml   # CI/CD
 ├── package.json          # Workspaces + scripts globais
-└── vercel.json            # Config de build/deploy na Vercel
+├── vercel.json            # Config de build/deploy na Vercel (projeto do shell)
+└── microfrontends.json    # Grupo de microfrontends da Vercel (shell + 2 micros)
 ```
 
 ## 🚀 Como rodar
@@ -196,15 +197,42 @@ e o [`vercel.json`](vercel.json) da raiz, que builda o monorepo inteiro
 | `VERCEL_ORG_ID` | rode `npx vercel link` uma vez em `bookhub/` → `.vercel/project.json` |
 | `VERCEL_PROJECT_ID` | mesmo arquivo `.vercel/project.json` |
 
-> **Nota sobre os micros em produção:** o deploy publica o **shell**. Os
-> micros Catálogo e Estante continuam sendo consumidos via
-> `http://localhost:3001` / `:3002` (Module Federation) — ou seja, as abas
-> Catálogo e Minha Estante funcionam plenamente quando você roda os micros
-> localmente (`npm run dev -w apps/micro-catalogo`, etc.), e mostram uma
-> mensagem de erro amigável em produção caso os micros não estejam
-> publicados. Isso é intencional: reflete a natureza de um micro frontend
-> de verdade, onde cada parte é implantada (e pode ser testada)
-> separadamente — ver `RemoteErrorBoundary` no shell.
+### Publicando os micros em produção (Vercel Microfrontends)
+
+Por padrão, o shell consome os micros via Module Federation em
+`http://localhost:3001` / `:3002`. Para as abas Catálogo e Minha Estante
+funcionarem também no site publicado (não só localmente), cada micro
+precisa ser publicado como **seu próprio projeto Vercel**, registrado no
+mesmo grupo de microfrontends — ver [`microfrontends.json`](microfrontends.json).
+
+1. Na Vercel, crie **dois novos projetos** a partir do mesmo repositório
+   GitHub (`itsjrsouza/bookhub`): um para `apps/micro-catalogo` e outro
+   para `apps/micro-estante`. Em cada um, configure:
+   - **Root Directory:** raiz do repositório (deixe em branco) — precisa
+     enxergar o monorepo inteiro para o workspace `@bookhub/shared` resolver.
+   - **Build Command:** `npm run build -w apps/micro-catalogo` (ou
+     `apps/micro-estante`, conforme o projeto).
+   - **Output Directory:** `apps/micro-catalogo/dist` (ou `apps/micro-estante/dist`).
+   - **Environment Variable `PUBLIC_URL`:** a URL que a Vercel vai atribuir
+     a esse projeto (ex: `https://bookhub-micro-catalogo.vercel.app`) — sem
+     barra no final. É o que faz os chunks internos do Webpack (vendors,
+     módulo exposto) serem carregados do domínio certo.
+   - Para o `micro-catalogo`, configure também `CRUDCRUD_URL` como
+     variável de ambiente do projeto.
+2. No projeto do **shell** na Vercel, adicione as variáveis de ambiente
+   `CATALOGO_REMOTE_URL` e `ESTANTE_REMOTE_URL` com as URLs publicadas dos
+   dois projetos acima (sem barra no final) — usadas em
+   `apps/shell/vite.config.ts` para montar a URL do `remoteEntry.js` de
+   cada remote no build de produção.
+3. No painel do projeto do shell, em **Microfrontends**, associe os dois
+   projetos satélite ao grupo (a Vercel atualiza o roteamento
+   automaticamente a partir do [`microfrontends.json`](microfrontends.json)
+   já commitado na raiz).
+
+Sem esses passos, o site publicado continua funcionando normalmente para
+Catálogo/Estante quando você roda os micros localmente, e mostra uma
+mensagem de erro amigável nessas abas em produção caso os micros ainda não
+tenham sido publicados — ver `RemoteErrorBoundary` no shell.
 
 ## 📈 Performance
 

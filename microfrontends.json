@@ -1,0 +1,22 @@
+{
+  "$schema": "https://openapi.vercel.sh/microfrontends.json",
+  "applications": {
+    "bookhub": {
+      "development": {
+        "fallback": "bookhub-flame.vercel.app"
+      }
+    },
+    "bookhub-micro-catalogo": {
+      "packagePath": "apps/micro-catalogo",
+      "development": {
+        "fallback": "bookhub-micro-catalogo.vercel.app"
+      }
+    },
+    "bookhub-micro-estante": {
+      "packagePath": "apps/micro-estante",
+      "development": {
+        "fallback": "bookhub-micro-estante.vercel.app"
+      }
+    }
+  }
+}
