@@ -8,12 +8,24 @@
     },
     "bookhub-micro-catalogo": {
       "packagePath": "apps/micro-catalogo",
+      "routing": [
+        {
+          "group": "catalogo",
+          "paths": ["/micro-catalogo", "/micro-catalogo/:path*"]
+        }
+      ],
       "development": {
         "fallback": "bookhub-micro-catalogo.vercel.app"
       }
     },
     "bookhub-micro-estante": {
       "packagePath": "apps/micro-estante",
+      "routing": [
+        {
+          "group": "estante",
+          "paths": ["/micro-estante", "/micro-estante/:path*"]
+        }
+      ],
       "development": {
         "fallback": "bookhub-micro-estante.vercel.app"
       }
