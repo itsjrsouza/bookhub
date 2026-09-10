@@ -60,14 +60,25 @@ Federation** (usando `@module-federation/vite` no lado do host Vite e
 Leitura** é um PWA independente, acessível em `/diario/`, sem depender de
 build nenhum — é HTML/CSS/JS puro.
 
+Em produção, os três apps (`shell`, `micro-catalogo`, `micro-estante`) são
+publicados como **projetos Vercel totalmente independentes**, cada um com
+sua própria URL. A URL de cada micro é passada ao shell via variável de
+ambiente (`CATALOGO_REMOTE_URL`/`ESTANTE_REMOTE_URL`) — não há nenhum
+recurso "mágico" de orquestração da Vercel envolvido, é só Module
+Federation apontando para uma URL absoluta em vez de `localhost`. Veja
+[Publicando os micros em produção](#publicando-os-micros-em-produção-3-projetos-vercel-independentes).
+
 ## 📂 Estrutura do repositório
 
 ```
 bookhub/
 ├── apps/
-│   ├── shell/            # Container: React + TS + Vite + Tailwind
-│   ├── micro-catalogo/   # Micro Frontend: Catálogo (React + JS + Webpack MF)
-│   └── micro-estante/    # Micro Frontend: Estante (React + JS + Webpack MF)
+│   ├── shell/                # Container: React + TS + Vite + Tailwind
+│   │   └── vercel.json        # (implícito) usa o vercel.json da raiz
+│   ├── micro-catalogo/        # Micro Frontend: Catálogo (React + JS + Webpack MF)
+│   │   └── vercel.json        # Headers CORS (projeto Vercel próprio)
+│   └── micro-estante/         # Micro Frontend: Estante (React + JS + Webpack MF)
+│       └── vercel.json        # Headers CORS (projeto Vercel próprio)
 ├── packages/
 │   └── shared/           # Tipos, constantes e utilitários compartilhados
 ├── public/
@@ -78,8 +89,7 @@ bookhub/
 │   └── copy-diario.mjs   # Copia public/diario para dentro do build do shell
 ├── .github/workflows/main.yml   # CI/CD
 ├── package.json          # Workspaces + scripts globais
-├── vercel.json            # Config de build/deploy na Vercel (projeto do shell)
-└── microfrontends.json    # Grupo de microfrontends da Vercel (shell + 2 micros)
+└── vercel.json            # Config de build/deploy do projeto do shell (rewrites de SPA)
 ```
 
 ## 🚀 Como rodar
@@ -197,39 +207,80 @@ e o [`vercel.json`](vercel.json) da raiz, que builda o monorepo inteiro
 | `VERCEL_ORG_ID` | rode `npx vercel link` uma vez em `bookhub/` → `.vercel/project.json` |
 | `VERCEL_PROJECT_ID` | mesmo arquivo `.vercel/project.json` |
 
-### Publicando os micros em produção (Vercel Microfrontends)
+### Publicando os micros em produção (3 projetos Vercel independentes)
 
-Por padrão, o shell consome os micros via Module Federation em
-`http://localhost:3001` / `:3002`. Para as abas Catálogo e Minha Estante
-funcionarem também no site publicado (não só localmente), cada micro
-precisa ser publicado como **seu próprio projeto Vercel**, registrado no
-mesmo grupo de microfrontends — ver [`microfrontends.json`](microfrontends.json).
+> O plano Hobby da Vercel não dá acesso ao recurso nativo de
+> "Microfrontends" (roteamento gerenciado entre projetos). Por isso o
+> BookHub monta essa orquestração **inteiramente em código**: três
+> projetos Vercel totalmente independentes, e o shell carrega os outros
+> dois via Module Federation apontando para URLs absolutas.
 
-1. Na Vercel, crie **dois novos projetos** a partir do mesmo repositório
-   GitHub (`itsjrsouza/bookhub`): um para `apps/micro-catalogo` e outro
-   para `apps/micro-estante`. Em cada um, configure:
-   - **Root Directory:** raiz do repositório (deixe em branco) — precisa
-     enxergar o monorepo inteiro para o workspace `@bookhub/shared` resolver.
-   - **Build Command:** `npm run build -w apps/micro-catalogo` (ou
-     `apps/micro-estante`, conforme o projeto).
-   - **Output Directory:** `apps/micro-catalogo/dist` (ou `apps/micro-estante/dist`).
-   - **Environment Variable `PUBLIC_URL`:** a URL que a Vercel vai atribuir
-     a esse projeto (ex: `https://bookhub-micro-catalogo.vercel.app`) — sem
-     barra no final. É o que faz os chunks internos do Webpack (vendors,
-     módulo exposto) serem carregados do domínio certo.
-   - Para o `micro-catalogo`, configure também `CRUDCRUD_URL` como
-     variável de ambiente do projeto.
-2. No projeto do **shell** na Vercel, adicione as variáveis de ambiente
-   `CATALOGO_REMOTE_URL` e `ESTANTE_REMOTE_URL` com as URLs publicadas dos
-   dois projetos acima (sem barra no final) — usadas em
-   `apps/shell/vite.config.ts` para montar a URL do `remoteEntry.js` de
-   cada remote no build de produção.
-3. No painel do projeto do shell, em **Microfrontends**, associe os dois
-   projetos satélite ao grupo (a Vercel atualiza o roteamento
-   automaticamente a partir do [`microfrontends.json`](microfrontends.json)
-   já commitado na raiz).
+| Projeto Vercel | Root Directory | Build Command | Output Directory |
+|---|---|---|---|
+| `bookhub` (shell) | raiz do repo | `npm run build` (via `vercel.json`) | `apps/shell/dist` |
+| `bookhub-micro-catalogo` | `apps/micro-catalogo` | `npm run build` | `dist` |
+| `bookhub-micro-estante` | `apps/micro-estante` | `npm run build` | `dist` |
 
-Sem esses passos, o site publicado continua funcionando normalmente para
+Passo a passo:
+
+1. **Crie os dois projetos satélite** na Vercel, importando o mesmo
+   repositório GitHub (`itsjrsouza/bookhub`) de novo para cada um, com o
+   **Root Directory** apontando direto para a pasta do app (`apps/micro-catalogo`
+   ou `apps/micro-estante`) — a Vercel detecta o monorepo e instala a
+   partir da raiz automaticamente. Framework Preset: **Other**.
+2. Em cada um, nas **Environment Variables**:
+   - `bookhub-micro-catalogo`: `PUBLIC_URL=https://bookhub-micro-catalogo.vercel.app`
+     e `CRUDCRUD_URL=<seu endpoint do crudcrud>`.
+   - `bookhub-micro-estante`: `PUBLIC_URL=https://bookhub-micro-estante.vercel.app`.
+
+   `PUBLIC_URL` define o `output.publicPath` do Webpack (ver
+   `webpack.config.js` de cada micro) — sem isso, os chunks internos
+   (vendors, módulo exposto) tentariam carregar de `localhost`.
+3. No projeto **`bookhub`** (o shell), adicione as variáveis de ambiente
+   `CATALOGO_REMOTE_URL=https://bookhub-micro-catalogo.vercel.app` e
+   `ESTANTE_REMOTE_URL=https://bookhub-micro-estante.vercel.app` — usadas
+   em `apps/shell/vite.config.ts` para montar a URL do `remoteEntry.js` de
+   cada remote no build de produção (em dev, sem essas variáveis, o
+   padrão continua sendo `localhost:3001`/`:3002`).
+4. Redeploy os três projetos.
+
+**CORS:** como o shell carrega os remotes de um domínio diferente
+(`bookhub-flame.vercel.app` → `bookhub-micro-catalogo.vercel.app`), os
+dois micros precisam responder com cabeçalhos CORS liberando essa origem.
+Isso já está configurado no `vercel.json` de cada micro
+([`apps/micro-catalogo/vercel.json`](apps/micro-catalogo/vercel.json),
+[`apps/micro-estante/vercel.json`](apps/micro-estante/vercel.json)):
+
+```json
+{
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "*" }
+      ]
+    }
+  ]
+}
+```
+
+`*` é seguro aqui porque os dois micros só servem arquivos estáticos
+públicos (JS/CSS do bundle) — não há cookies, autenticação ou dados
+privados por trás dessas rotas.
+
+**Roteamento interno (`/catalogo`, `/estante`):** o shell usa um pequeno
+hook próprio baseado na History API do navegador
+([`apps/shell/src/hooks/useRoute.ts`](apps/shell/src/hooks/useRoute.ts))
+para sincronizar a aba ativa com a URL — sem depender de nenhuma
+biblioteca de rotas. Acessar `/catalogo` ou `/estante` direto (ou dar
+refresh) funciona graças ao rewrite configurado em
+[`vercel.json`](vercel.json) (`"rewrites"`), que redireciona qualquer
+caminho não encontrado como arquivo estático para `index.html`, deixando
+o React assumir o roteamento a partir daí.
+
+Sem os passos 1-4, o site publicado continua funcionando normalmente para
 Catálogo/Estante quando você roda os micros localmente, e mostra uma
 mensagem de erro amigável nessas abas em produção caso os micros ainda não
 tenham sido publicados — ver `RemoteErrorBoundary` no shell.
