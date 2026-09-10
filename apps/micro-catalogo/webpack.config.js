@@ -44,6 +44,10 @@ module.exports = (env, argv) => ({
   plugins: [
     new webpack.DefinePlugin({
       'process.env.CRUDCRUD_URL': JSON.stringify(process.env.CRUDCRUD_URL || ''),
+      // Usado pelo cliente (src/api.js) para montar a URL do proxy
+      // /api/livros em produção — precisa ser o mesmo valor usado acima
+      // em output.publicPath.
+      'process.env.PUBLIC_URL': JSON.stringify(process.env.PUBLIC_URL || ''),
     }),
     new ModuleFederationPlugin({
       name: 'micro_catalogo',

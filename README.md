@@ -130,8 +130,13 @@ npx serve public/diario              # PWA Diário de Leitura, isolada
 ## 🔑 Configurando o crudcrud.com
 
 O micro Catálogo (`apps/micro-catalogo`) precisa de um endpoint do
-[crudcrud.com](https://crudcrud.com) — gratuito, sem login, mas **único por
-sessão de navegador e válido por ~72 horas**.
+[crudcrud.com](https://crudcrud.com) — gratuito, sem login, mas **único e
+que expira depois de pouco tempo de uso** (o próprio crudcrud retorna
+`400 Bad Request` com a mensagem `"Endpoint has expired."` quando isso
+acontece — se aparecer também um erro de CORS no console junto com esse
+400, é só reflexo disso: respostas de erro do crudcrud não incluem
+cabeçalho CORS, então o navegador acusa os dois problemas juntos, mas a
+causa real é sempre o endpoint expirado).
 
 1. Acesse **https://crudcrud.com** no navegador.
 2. Copie a URL única exibida (ex: `https://crudcrud.com/api/1a2b3c4d.../livros`).
@@ -143,7 +148,28 @@ sessão de navegador e válido por ~72 horas**.
    ```env
    CRUDCRUD_URL=https://crudcrud.com/api/SEU_ENDPOINT_AQUI/livros
    ```
-4. Reinicie o `npm run dev`. Se o endpoint expirar, gere um novo e repita.
+4. Reinicie o `npm run dev`. Se o endpoint expirar, gere um novo e repita
+   (em produção, atualize a variável de ambiente `CRUDCRUD_URL` no projeto
+   `bookhub-micro-catalogo` na Vercel e faça um redeploy).
+
+### Em produção: proxy via Serverless Function
+
+Em desenvolvimento local, o `apps/micro-catalogo/src/api.js` chama o
+crudcrud direto do navegador. Em produção (build com `NODE_ENV=production`
+e `PUBLIC_URL` definido), ele chama `/api/livros` — uma Serverless
+Function do próprio projeto `bookhub-micro-catalogo`
+([`api/livros/index.js`](apps/micro-catalogo/api/livros/index.js) para
+listar/criar, [`api/livros/[id].js`](apps/micro-catalogo/api/livros/%5Bid%5D.js)
+para atualizar/remover um item) que repassa a chamada para o crudcrud do
+lado do servidor. Vantagens: a URL do crudcrud (com o ID único do
+endpoint) nunca aparece no bundle JS público, e não existe mais nenhuma
+chamada cross-origin para `crudcrud.com` saindo do navegador do usuário —
+só o servidor da Vercel conversa com o crudcrud.
+
+Não é preciso nenhuma configuração extra no `vercel.json` para isso — a
+Vercel detecta automaticamente qualquer pasta `api/` na raiz do projeto
+(aqui, relativa ao Root Directory `apps/micro-catalogo`) e publica cada
+arquivo como uma função serverless.
 
 ## 🔌 Comunicação entre os micros
 
