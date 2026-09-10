@@ -2,24 +2,7 @@
 // Rota: PUT/DELETE /api/livros/:id
 //
 // CommonJS de propósito — ver comentário em api/livros/index.js.
-
-function getCrudcrudUrl() {
-  const raw = process.env.CRUDCRUD_URL || '';
-  return raw.replace(/\/+$/, '');
-}
-
-function parseBody(req) {
-  if (req.body == null) return {};
-  if (typeof req.body === 'object') return req.body;
-  if (typeof req.body === 'string') {
-    try {
-      return JSON.parse(req.body);
-    } catch {
-      return {};
-    }
-  }
-  return {};
-}
+const { getCrudcrudUrl, parseBody, parseResponseBody, fetchWithRetry } = require('../_lib/crudcrud');
 
 module.exports = async function handler(req, res) {
   try {
@@ -47,30 +30,34 @@ module.exports = async function handler(req, res) {
 
     if (req.method === 'PUT') {
       const body = parseBody(req);
-      const upstream = await fetch(upstreamUrl, {
+      console.log('[api/livros/[id]] PUT recebido, id:', id, body);
+      const upstream = await fetchWithRetry(upstreamUrl, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
+      console.log('[api/livros/[id]] PUT concluído, status upstream:', upstream.status);
+
       if (upstream.status === 200 || upstream.status === 204) {
         res.status(200).end();
         return;
       }
-      const text = await upstream.text();
-      const data = text ? JSON.parse(text) : null;
+      const data = await parseResponseBody(upstream);
       res.status(upstream.status).json(data);
       return;
     }
 
     if (req.method === 'DELETE') {
-      const upstream = await fetch(upstreamUrl, { method: 'DELETE' });
+      console.log('[api/livros/[id]] DELETE recebido, id:', id);
+      const upstream = await fetchWithRetry(upstreamUrl, { method: 'DELETE' });
+      console.log('[api/livros/[id]] DELETE concluído, status upstream:', upstream.status);
       res.status(upstream.status).end();
       return;
     }
 
     res.status(405).json({ error: 'Método não permitido.' });
   } catch (error) {
-    console.error('[api/livros/[id]] erro:', error);
+    console.error('[api/livros/[id]] erro não tratado:', error);
     res.status(502).json({
       error: 'Falha ao comunicar com o crudcrud.',
       details: error instanceof Error ? error.message : String(error),
