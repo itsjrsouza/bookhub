@@ -221,14 +221,17 @@ rodando em push/PR para `main`:
 Lint → Testes (Vitest) → Build (micros + shell) → Deploy (Vercel, só em push na main)
 ```
 
-O deploy usa [`amondnet/vercel-action@v25`](https://github.com/amondnet/vercel-action)
-e o [`vercel.json`](vercel.json) da raiz, que builda o monorepo inteiro
+O deploy usa a [Vercel CLI](https://vercel.com/docs/cli) diretamente
+(`vercel pull` → `vercel build` → `vercel deploy --prebuilt`), instalando
+`vercel@latest` a cada execução — é o fluxo que a própria Vercel documenta
+para CI, sem depender de uma GitHub Action de terceiro. Usa o
+[`vercel.json`](vercel.json) da raiz, que builda o monorepo inteiro
 (`npm run build`) e publica `apps/shell/dist`.
 
 ### Secrets necessários (GitHub → Settings → Secrets and variables → Actions)
 
 | Secret | Onde encontrar |
-|---|---|
+
 | `VERCEL_TOKEN` | [vercel.com/account/tokens](https://vercel.com/account/tokens) |
 | `VERCEL_ORG_ID` | rode `npx vercel link` uma vez em `bookhub/` → `.vercel/project.json` |
 | `VERCEL_PROJECT_ID` | mesmo arquivo `.vercel/project.json` |
@@ -242,7 +245,7 @@ e o [`vercel.json`](vercel.json) da raiz, que builda o monorepo inteiro
 > dois via Module Federation apontando para URLs absolutas.
 
 | Projeto Vercel | Root Directory | Build Command | Output Directory |
-|---|---|---|---|
+
 | `bookhub` (shell) | raiz do repo | `npm run build` (via `vercel.json`) | `apps/shell/dist` |
 | `bookhub-micro-catalogo` | `apps/micro-catalogo` | `npm run build` | `dist` |
 | `bookhub-micro-estante` | `apps/micro-estante` | `npm run build` | `dist` |
